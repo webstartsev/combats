@@ -11,8 +11,9 @@ const maps = [
         width: 50,
         height: 50,
         padding: 10,
-        color: "white",
-        status: 0
+        color: "rgb(250, 93, 240)",
+        enter: 0,
+        hover: false
       },
       {
         name: "doc",
@@ -24,7 +25,8 @@ const maps = [
         height: 50,
         padding: 10,
         color: "black",
-        status: 0
+        enter: 0,
+        hover: false
       },
       {
         name: "temple",
@@ -36,7 +38,8 @@ const maps = [
         height: 50,
         padding: 10,
         color: "blue",
-        status: 0
+        enter: 0,
+        hover: false
       }
     ],
     exit: [
@@ -75,7 +78,8 @@ const maps = [
         height: 50,
         padding: 10,
         color: "blue",
-        status: 0
+        enter: 0,
+        hover: false
       }
     ],
     exit: [
@@ -104,7 +108,8 @@ const maps = [
         height: 50,
         padding: 10,
         color: "black",
-        status: 0
+        enter: 0,
+        hover: false
       }
     ],
     exit: [
@@ -133,7 +138,8 @@ const maps = [
         height: 50,
         padding: 10,
         color: "blue",
-        status: 0
+        enter: 0,
+        hover: false
       }
     ]
   }
@@ -142,19 +148,31 @@ const maps = [
 const ANIMATE_INTERBAL = 5;
 
 function Combats(el, options) {
-  this.playerRadius = 10;
+  this.canvas = el;
+  this.ctx = this.canvas.getContext("2d");
 
-  this.playerX = 10;
-  this.playerY = 10;
-  this.animateStep = 2;
-  this.toX = 0;
-  this.toY = 0;
-
-  this.playerLocation = options.location || "";
+  this.player = {
+    position: {
+      x: 10,
+      y: 10
+    },
+    radius: 10,
+    animated: false,
+    to: {
+      x: 0,
+      y: 0
+    },
+    location: options.location || ""
+  };
+  this.mouse = {
+    position: {
+      x: 0,
+      y: 0
+    },
+    hover: false
+  };
 
   this.builds = null;
-
-  this.animateGo = false;
   this.requestId = null;
   this.intervalId = null;
 
@@ -168,48 +186,71 @@ function Combats(el, options) {
     });
 
     clearInterval(this.intervalId);
-    this.playerX = 10;
-    this.playerY = 10;
+    this.player.position.x = 10;
+    this.player.position.y = 10;
 
-    this.playerLocation = location;
+    this.player.location = location;
   };
 
   this.init = location => {
-    this.canvas = el;
-    this.ctx = this.canvas.getContext("2d");
-
     this.changeLocation(location);
 
     this.render();
     el.addEventListener("click", this.moveTo, false);
+    // console.log("this.canvas: ", this.canvas);
+  };
+
+  this.canvas.onmousemove = e => {
+    let r = this.canvas.getBoundingClientRect();
+
+    this.mouse.x = e.clientX - r.left;
+    this.mouse.y = e.clientY - r.top;
+
+    this.builds.forEach(item => {
+      if (
+        this.mouse.x > item.position.x &&
+        this.mouse.x < item.position.x + item.width &&
+        this.mouse.y > item.position.y &&
+        this.mouse.y < item.position.y + item.height
+      ) {
+        item.hover = true;
+        // this.mouse.hover = true;
+      } else {
+        item.hover = false;
+        // this.mouse.hover = false;
+      }
+    });
   };
 
   this.moveTo = e => {
-    this.animateGo = true;
+    this.player.animated = true;
 
-    this.toX = e.clientX - this.canvas.offsetLeft;
-    this.toY = e.clientY - this.canvas.offsetTop;
+    this.player.to.x = e.clientX - this.canvas.offsetLeft;
+    this.player.to.y = e.clientY - this.canvas.offsetTop;
 
-    if (this.animateGo) {
+    if (this.player.animated) {
       clearInterval(this.intervalId);
       this.intervalId = setInterval(this._animate, ANIMATE_INTERBAL);
     }
   };
 
   this._animate = () => {
-    if (this.playerX < this.toX) {
-      this.playerX++;
-    } else if (this.playerX > this.toX) {
-      this.playerX--;
+    if (this.player.position.x < this.player.to.x) {
+      this.player.position.x++;
+    } else if (this.player.position.x > this.player.to.x) {
+      this.player.position.x--;
     }
-    if (this.playerY < this.toY) {
-      this.playerY++;
-    } else if (this.playerY > this.toY) {
-      this.playerY--;
+    if (this.player.position.y < this.player.to.y) {
+      this.player.position.y++;
+    } else if (this.player.position.y > this.player.to.y) {
+      this.player.position.y--;
     }
 
-    if (this.playerX == this.toX && this.playerY == this.toY) {
-      this.animateGo = false;
+    if (
+      this.player.position.x == this.player.to.x &&
+      this.player.position.y == this.player.to.y
+    ) {
+      this.player.animated = false;
       clearInterval(this.intervalId);
     }
   };
@@ -218,7 +259,7 @@ function Combats(el, options) {
     this._clearCanvas();
     this.drawMap();
     this.drawExit();
-    this.drawplayer(this.playerX, this.playerY);
+    this.drawplayer(this.player.position.x, this.player.position.y);
     this.drawBuilds();
     this.enterBuild();
     this.enterExit();
@@ -234,10 +275,10 @@ function Combats(el, options) {
   this.drawplayer = (x, y) => {
     this.ctx.beginPath();
     this.ctx.rect(
-      x - this.playerRadius / 2,
-      y - this.playerRadius / 2,
-      this.playerRadius,
-      this.playerRadius
+      x - this.player.radius / 2,
+      y - this.player.radius / 2,
+      this.player.radius,
+      this.player.radius
     );
     this.ctx.fillStyle = "red";
     this.ctx.fill();
@@ -270,7 +311,10 @@ function Combats(el, options) {
       this.ctx.rect(buildX, buildY, item.width, item.height);
       this.ctx.fillStyle = item.color;
       this.ctx.fill();
-      if (item.status) {
+      if (item.hover) {
+        this.ctx.strokeStyle = "gold";
+        this.ctx.stroke();
+      } else if (item.enter) {
         this.ctx.strokeStyle = "red";
         this.ctx.stroke();
       }
@@ -281,14 +325,14 @@ function Combats(el, options) {
   this.enterBuild = () => {
     this.builds.forEach(item => {
       if (
-        this.playerX > item.position.x &&
-        this.playerX < item.position.x + item.width &&
-        this.playerY > item.position.y &&
-        this.playerY < item.position.y + item.height
+        this.player.position.x > item.position.x &&
+        this.player.position.x < item.position.x + item.width &&
+        this.player.position.y > item.position.y &&
+        this.player.position.y < item.position.y + item.height
       ) {
-        item.status = 1;
+        item.enter = 1;
       } else {
-        item.status = 0;
+        item.enter = 0;
       }
     });
   };
@@ -296,14 +340,14 @@ function Combats(el, options) {
   this.enterExit = () => {
     this.exit.forEach(item => {
       if (
-        this.playerX > item.position.x &&
-        this.playerX < item.position.x + item.width &&
-        this.playerY > item.position.y &&
-        this.playerY < item.position.y + item.height
+        this.player.position.x > item.position.x &&
+        this.player.position.x < item.position.x + item.width &&
+        this.player.position.y > item.position.y &&
+        this.player.position.y < item.position.y + item.height
       ) {
         console.log(item.to);
         this.changeLocation(item.to);
-        item.status = 1;
+        item.enter = 1;
       }
     });
   };
