@@ -4,8 +4,10 @@ const maps = [
     builds: [
       {
         name: "house",
-        positionX: 50,
-        positionY: 50,
+        position: {
+          x: 50,
+          y: 50
+        },
         width: 50,
         height: 50,
         padding: 10,
@@ -14,8 +16,10 @@ const maps = [
       },
       {
         name: "doc",
-        positionX: 130,
-        positionY: 10,
+        position: {
+          x: 130,
+          y: 10
+        },
         width: 50,
         height: 50,
         padding: 10,
@@ -24,8 +28,10 @@ const maps = [
       },
       {
         name: "temple",
-        positionX: 150,
-        positionY: 150,
+        position: {
+          x: 150,
+          y: 150
+        },
         width: 50,
         height: 50,
         padding: 10,
@@ -35,7 +41,7 @@ const maps = [
     ],
     exit: [
       {
-        to: "aaa",
+        to: "oasis",
         position: {
           x: 470,
           y: 150
@@ -45,7 +51,7 @@ const maps = [
         color: "yellow"
       },
       {
-        to: "bbb",
+        to: "plato",
         position: {
           x: 150,
           y: 310
@@ -57,12 +63,14 @@ const maps = [
     ]
   },
   {
-    name: "aaa",
+    name: "oasis",
     builds: [
       {
         name: "house",
-        positionX: 300,
-        positionY: 150,
+        position: {
+          x: 300,
+          y: 150
+        },
         width: 50,
         height: 50,
         padding: 10,
@@ -84,12 +92,14 @@ const maps = [
     ]
   },
   {
-    name: "bbb",
+    name: "plato",
     builds: [
       {
         name: "doc",
-        positionX: 330,
-        positionY: 10,
+        position: {
+          x: 330,
+          y: 10
+        },
         width: 50,
         height: 50,
         padding: 10,
@@ -115,8 +125,10 @@ const maps = [
     builds: [
       {
         name: "temple",
-        positionX: 350,
-        positionY: 350,
+        position: {
+          x: 350,
+          y: 350
+        },
         width: 50,
         height: 50,
         padding: 10,
@@ -129,16 +141,16 @@ const maps = [
 
 const ANIMATE_INTERBAL = 5;
 
-function Canvas(el, options) {
-  this.persRadius = 10;
+function Combats(el, options) {
+  this.playerRadius = 10;
 
-  this.persX = 10;
-  this.persY = 10;
+  this.playerX = 10;
+  this.playerY = 10;
   this.animateStep = 2;
   this.toX = 0;
   this.toY = 0;
 
-  this.persLocation = options.location || "";
+  this.playerLocation = options.location || "";
 
   this.builds = null;
 
@@ -156,10 +168,10 @@ function Canvas(el, options) {
     });
 
     clearInterval(this.intervalId);
-    this.persX = 10;
-    this.persY = 10;
+    this.playerX = 10;
+    this.playerY = 10;
 
-    this.persLocation = location;
+    this.playerLocation = location;
   };
 
   this.init = location => {
@@ -169,10 +181,10 @@ function Canvas(el, options) {
     this.changeLocation(location);
 
     this.render();
-    el.addEventListener("click", this.changePositionPers, false);
+    el.addEventListener("click", this.moveTo, false);
   };
 
-  this.changePositionPers = e => {
+  this.moveTo = e => {
     this.animateGo = true;
 
     this.toX = e.clientX - this.canvas.offsetLeft;
@@ -185,18 +197,18 @@ function Canvas(el, options) {
   };
 
   this._animate = () => {
-    if (this.persX < this.toX) {
-      this.persX++;
-    } else if (this.persX > this.toX) {
-      this.persX--;
+    if (this.playerX < this.toX) {
+      this.playerX++;
+    } else if (this.playerX > this.toX) {
+      this.playerX--;
     }
-    if (this.persY < this.toY) {
-      this.persY++;
-    } else if (this.persY > this.toY) {
-      this.persY--;
+    if (this.playerY < this.toY) {
+      this.playerY++;
+    } else if (this.playerY > this.toY) {
+      this.playerY--;
     }
 
-    if (this.persX == this.toX && this.persY == this.toY) {
+    if (this.playerX == this.toX && this.playerY == this.toY) {
       this.animateGo = false;
       clearInterval(this.intervalId);
     }
@@ -206,7 +218,7 @@ function Canvas(el, options) {
     this._clearCanvas();
     this.drawMap();
     this.drawExit();
-    this.drawPers(this.persX, this.persY);
+    this.drawplayer(this.playerX, this.playerY);
     this.drawBuilds();
     this.enterBuild();
     this.enterExit();
@@ -219,13 +231,13 @@ function Canvas(el, options) {
   };
 
   // DRAW
-  this.drawPers = (x, y) => {
+  this.drawplayer = (x, y) => {
     this.ctx.beginPath();
     this.ctx.rect(
-      x - this.persRadius / 2,
-      y - this.persRadius / 2,
-      this.persRadius,
-      this.persRadius
+      x - this.playerRadius / 2,
+      y - this.playerRadius / 2,
+      this.playerRadius,
+      this.playerRadius
     );
     this.ctx.fillStyle = "red";
     this.ctx.fill();
@@ -251,8 +263,8 @@ function Canvas(el, options) {
 
   this.drawBuilds = () => {
     this.builds.forEach(item => {
-      let buildX = item.positionX;
-      let buildY = item.positionY;
+      let buildX = item.position.x;
+      let buildY = item.position.y;
 
       this.ctx.beginPath();
       this.ctx.rect(buildX, buildY, item.width, item.height);
@@ -269,10 +281,10 @@ function Canvas(el, options) {
   this.enterBuild = () => {
     this.builds.forEach(item => {
       if (
-        this.persX > item.positionX &&
-        this.persX < item.positionX + item.width &&
-        this.persY > item.positionY &&
-        this.persY < item.positionY + item.height
+        this.playerX > item.position.x &&
+        this.playerX < item.position.x + item.width &&
+        this.playerY > item.position.y &&
+        this.playerY < item.position.y + item.height
       ) {
         item.status = 1;
       } else {
@@ -284,10 +296,10 @@ function Canvas(el, options) {
   this.enterExit = () => {
     this.exit.forEach(item => {
       if (
-        this.persX > item.position.x &&
-        this.persX < item.position.x + item.width &&
-        this.persY > item.position.y &&
-        this.persY < item.position.y + item.height
+        this.playerX > item.position.x &&
+        this.playerX < item.position.x + item.width &&
+        this.playerY > item.position.y &&
+        this.playerY < item.position.y + item.height
       ) {
         console.log(item.to);
         this.changeLocation(item.to);
