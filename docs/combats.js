@@ -1,4 +1,8 @@
 "use strict";
+
+/**
+ *
+ */
 const maps = [
   {
     name: "main",
@@ -130,60 +134,68 @@ const maps = [
 
 const ANIMATE_INTERBAL = 5;
 
-function Combats(el, options) {
-  this.canvas = el;
-  this.ctx = this.canvas.getContext("2d");
+class Combats {
+  constructor(el, options) {
+    this.canvas = el;
+    this.ctx = this.canvas.getContext("2d");
 
-  this.player = {
-    position: {
-      x: 10,
-      y: 10
-    },
-    radius: 10,
-    animated: false,
-    to: {
-      x: 0,
-      y: 0
-    },
-    location: options.location || ""
-  };
-  this.mouse = {
-    position: {
-      x: 0,
-      y: 0
-    },
-    hover: false
-  };
+    this.player = {
+      position: {
+        x: 10,
+        y: 10
+      },
+      size: 10,
+      animated: false,
+      to: {
+        x: null,
+        y: null
+      },
+      location: options.location || "main"
+    };
+    this.mouse = {
+      position: {
+        x: 0,
+        y: 0
+      },
+      hover: false
+    };
 
-  this.builds = null;
-  this.requestId = null;
-  this.intervalId = null;
+    this.builds = null;
+    this.intervalId = null;
 
-  this.changeLocation = location => {
-    maps.forEach(item => {
-      if (item.name == location) {
-        this.builds = item.builds;
-        this.exit = item.exit;
-        return false;
-      }
-    });
+    this.init();
+  }
 
-    clearInterval(this.intervalId);
-    this.player.position.x = 10;
-    this.player.position.y = 10;
-
-    this.player.location = location;
-  };
-
-  this.init = location => {
-    this.changeLocation(location);
+  /**
+   * Инициализация проекта
+   */
+  init() {
+    this.setLocation(this.player.location);
 
     this.render();
-    el.addEventListener("click", this.moveTo, false);
-    // console.log("this.canvas: ", this.canvas);
-  };
+    this.canvas.addEventListener(
+      "click",
+      e => {
+        const x = e.clientX - this.canvas.offsetLeft;
+        const y = e.clientY - this.canvas.offsetTop;
 
-  this.canvas.onmousemove = e => {
+        return this.playerMove(x, y);
+      },
+
+      false
+    );
+    // TODO: Не работает в safari
+    // выполняется только один раз
+    // так же выполняется если нажатить на cmd, alt ...
+    this.canvas.onmousemove = e => {
+      this.checkHoverBuild(e);
+    };
+  }
+  /**
+   * Если курсор находится на здании подсветим его
+   * @param {Event} e
+   */
+  checkHoverBuild(e) {
     let r = this.canvas.getBoundingClientRect();
 
     this.mouse.x = e.clientX - r.left;
@@ -197,85 +209,36 @@ function Combats(el, options) {
         this.mouse.y < item.position.y + item.height
       ) {
         item.hover = true;
-        // this.mouse.hover = true;
       } else {
         item.hover = false;
-        // this.mouse.hover = false;
       }
     });
-  };
-
-  this.moveTo = e => {
-    this.player.animated = true;
-
-    this.player.to.x = e.clientX - this.canvas.offsetLeft;
-    this.player.to.y = e.clientY - this.canvas.offsetTop;
-
-    if (this.player.animated) {
-      clearInterval(this.intervalId);
-      this.intervalId = setInterval(this._animate, ANIMATE_INTERBAL);
-    }
-  };
-
-  this._animate = () => {
-    if (this.player.position.x < this.player.to.x) {
-      this.player.position.x++;
-    } else if (this.player.position.x > this.player.to.x) {
-      this.player.position.x--;
-    }
-    if (this.player.position.y < this.player.to.y) {
-      this.player.position.y++;
-    } else if (this.player.position.y > this.player.to.y) {
-      this.player.position.y--;
-    }
-
-    if (
-      this.player.position.x == this.player.to.x &&
-      this.player.position.y == this.player.to.y
-    ) {
-      this.player.animated = false;
-      clearInterval(this.intervalId);
-    }
-  };
-
-  this.render = () => {
+  }
+  /**
+   * Отрисовка canvas
+   */
+  render() {
     this._clearCanvas();
     this.drawMap();
     this.drawExit();
-    this.drawplayer(this.player.position.x, this.player.position.y);
+    this.drawPlayer(this.player.position.x, this.player.position.y);
     this.drawBuilds();
-    this.enterBuild();
-    this.enterExit();
+    this.checkEnterBuild();
+    this.checkEnterExit();
 
-    requestAnimationFrame(this.render);
-  };
-
-  this._clearCanvas = () => {
+    requestAnimationFrame(this.render.bind(this));
+  }
+  _clearCanvas() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-  };
-
-  // DRAW
-  this.drawplayer = (x, y) => {
-    this.ctx.beginPath();
-    this.ctx.rect(
-      x - this.player.radius / 2,
-      y - this.player.radius / 2,
-      this.player.radius,
-      this.player.radius
-    );
-    this.ctx.fillStyle = "red";
-    this.ctx.fill();
-    this.ctx.closePath();
-  };
-  this.drawMap = () => {
+  }
+  drawMap() {
     this.ctx.beginPath();
     this.ctx.rect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.fillStyle = "green";
     this.ctx.fill();
     this.ctx.closePath();
-  };
-
-  this.drawExit = () => {
+  }
+  drawExit() {
     this.exit.forEach(item => {
       this.ctx.beginPath();
       this.ctx.rect(item.position.x, item.position.y, item.width, item.height);
@@ -283,9 +246,20 @@ function Combats(el, options) {
       this.ctx.fill();
       this.ctx.closePath();
     });
-  };
-
-  this.drawBuilds = () => {
+  }
+  drawPlayer(x, y) {
+    this.ctx.beginPath();
+    this.ctx.rect(
+      x - this.player.size / 2,
+      y - this.player.size / 2,
+      this.player.size,
+      this.player.size
+    );
+    this.ctx.fillStyle = "red";
+    this.ctx.fill();
+    this.ctx.closePath();
+  }
+  drawBuilds() {
     this.builds.forEach(item => {
       let buildX = item.position.x;
       let buildY = item.position.y;
@@ -303,9 +277,11 @@ function Combats(el, options) {
       }
       this.ctx.closePath();
     });
-  };
-
-  this.enterBuild = () => {
+  }
+  /**
+   * Если персонаж зашел в здание, подсветим его
+   */
+  checkEnterBuild() {
     this.builds.forEach(item => {
       if (
         this.player.position.x > item.position.x &&
@@ -318,9 +294,11 @@ function Combats(el, options) {
         item.enter = 0;
       }
     });
-  };
-
-  this.enterExit = () => {
+  }
+  /**
+   * Если персонаж защел в зоню перехода, сменим локацию
+   */
+  checkEnterExit() {
     this.exit.forEach(item => {
       if (
         this.player.position.x > item.position.x &&
@@ -328,14 +306,75 @@ function Combats(el, options) {
         this.player.position.y > item.position.y &&
         this.player.position.y < item.position.y + item.height
       ) {
-        console.log(item.to);
-        this.changeLocation(item.to);
+        this.setLocation(item.to);
         item.enter = 1;
       }
     });
-  };
+  }
+  /**
+   * Запускаем интервальную функцию передвижения _animate()
+   * @param {Number} x
+   * @param {Number} y
+   *
+   */
+  playerMove(x, y) {
+    this.player.animated = true;
+    this.player.to.x = x;
+    this.player.to.y = y;
 
-  this.init(options.location);
+    if (this.player.animated) {
+      clearInterval(this.intervalId);
+      this.intervalId = setInterval(this._animate.bind(this), ANIMATE_INTERBAL);
+    }
+  }
+  /**
+   * текущая позиция персонажа:
+   * this.player.position.x
+   * this.player.position.y
+   *
+   * Позиция куда необходимо перейти:
+   * this.player.to.x
+   * this.player.to.y
+   */
+  _animate() {
+    if (this.player.position.x < this.player.to.x) {
+      this.player.position.x++;
+    } else if (this.player.position.x > this.player.to.x) {
+      this.player.position.x--;
+    }
+    if (this.player.position.y < this.player.to.y) {
+      this.player.position.y++;
+    } else if (this.player.position.y > this.player.to.y) {
+      this.player.position.y--;
+    }
 
-  return this;
+    if (
+      this.player.position.x == this.player.to.x &&
+      this.player.position.y == this.player.to.y
+    ) {
+      this.player.animated = false;
+      this.player.to.x = null;
+      this.player.to.y = null;
+      clearInterval(this.intervalId);
+    }
+  }
+  /**
+   * Устанавливаем новую локацию при переходе,
+   * для отрисовки новых точек на карте
+   * @param {String} location
+   */
+  setLocation(location) {
+    maps.forEach(item => {
+      if (item.name == location) {
+        this.builds = item.builds;
+        this.exit = item.exit;
+        return false;
+      }
+    });
+
+    clearInterval(this.intervalId);
+    this.player.position.x = 10;
+    this.player.position.y = 10;
+    this.player.location = location;
+  }
 }
