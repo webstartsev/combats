@@ -1,3 +1,4 @@
+"use strict";
 const maps = [
   {
     name: "main",
@@ -122,24 +123,6 @@ const maps = [
         width: 50,
         height: 10,
         color: "yellow"
-      }
-    ]
-  },
-  {
-    name: "ccc",
-    builds: [
-      {
-        name: "temple",
-        position: {
-          x: 350,
-          y: 350
-        },
-        width: 50,
-        height: 50,
-        padding: 10,
-        color: "blue",
-        enter: 0,
-        hover: false
       }
     ]
   }
